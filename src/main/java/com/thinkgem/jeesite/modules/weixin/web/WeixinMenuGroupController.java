@@ -1,0 +1,120 @@
+/**
+ * Copyright &copy; 2012-2016 <a href="https://github.com/thinkgem/jeesite">JeeSite</a> All rights reserved.
+ */
+package com.thinkgem.jeesite.modules.weixin.web;
+
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+
+import com.thinkgem.jeesite.modules.weixin.entity.WeixinAccount;
+import com.thinkgem.jeesite.modules.weixin.service.WeixinAccountService;
+import com.thinkgem.jeesite.modules.weixin.service.WeixinMenuService;
+import com.thinkgem.jeesite.modules.weixin.web.front.process.WxApiClient;
+import net.sf.json.JSONObject;
+import org.apache.shiro.authz.annotation.RequiresPermissions;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Controller;
+import org.springframework.ui.Model;
+import org.springframework.web.bind.annotation.ModelAttribute;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.servlet.mvc.support.RedirectAttributes;
+
+import com.thinkgem.jeesite.common.config.Global;
+import com.thinkgem.jeesite.common.persistence.Page;
+import com.thinkgem.jeesite.common.web.BaseController;
+import com.thinkgem.jeesite.common.utils.StringUtils;
+import com.thinkgem.jeesite.modules.weixin.entity.WeixinMenuGroup;
+import com.thinkgem.jeesite.modules.weixin.service.WeixinMenuGroupService;
+
+import java.util.List;
+
+/**
+ * 菜单组Controller
+ * @author HAILOU
+ * @version 2016-09-19
+ */
+@Controller
+@RequestMapping(value = "${adminPath}/weixin/weixinMenuGroup")
+public class WeixinMenuGroupController extends BaseController {
+
+	@Autowired
+	private WeixinMenuGroupService weixinMenuGroupService;
+	@Autowired
+	private WeixinMenuService weixinMenuService;
+	@Autowired
+	private WeixinAccountService weixinAccountService;
+	
+	@ModelAttribute
+	public WeixinMenuGroup get(@RequestParam(required=false) String id) {
+		WeixinMenuGroup entity = null;
+		if (StringUtils.isNotBlank(id)){
+			entity = weixinMenuGroupService.get(id);
+		}
+		if (entity == null){
+			entity = new WeixinMenuGroup();
+		}
+		return entity;
+	}
+	
+	@RequiresPermissions("weixin:weixinMenuGroup:view")
+	@RequestMapping(value = {"list", ""})
+	public String list(WeixinMenuGroup weixinMenuGroup, HttpServletRequest request, HttpServletResponse response, Model model) {
+		Page<WeixinMenuGroup> page = weixinMenuGroupService.findPage(new Page<WeixinMenuGroup>(request, response), weixinMenuGroup); 
+		model.addAttribute("page", page);
+		return "modules/weixin/weixinMenuGroupList";
+	}
+
+	@RequiresPermissions("weixin:weixinMenuGroup:view")
+	@RequestMapping(value = "form")
+	public String form(WeixinMenuGroup weixinMenuGroup, Model model) {
+
+		List<WeixinAccount> list = weixinAccountService.findList(new WeixinAccount());
+		model.addAttribute("weixinAccountList", list);
+
+		model.addAttribute("weixinMenuGroup", weixinMenuGroup);
+		return "modules/weixin/weixinMenuGroupForm";
+	}
+
+	@RequiresPermissions("weixin:weixinMenuGroup:edit")
+	@RequestMapping(value = "save")
+	public String save(WeixinMenuGroup weixinMenuGroup, Model model, RedirectAttributes redirectAttributes) {
+		if (!beanValidator(model, weixinMenuGroup)){
+			return form(weixinMenuGroup, model);
+		}
+		weixinMenuGroupService.save(weixinMenuGroup);
+		addMessage(redirectAttributes, "保存菜单组成功");
+		return "redirect:"+Global.getAdminPath()+"/weixin/weixinMenuGroup/?repage";
+	}
+	
+	@RequiresPermissions("weixin:weixinMenuGroup:edit")
+	@RequestMapping(value = "delete")
+	public String delete(WeixinMenuGroup weixinMenuGroup, RedirectAttributes redirectAttributes) {
+		StringBuilder sb = new StringBuilder();
+		JSONObject rstObj = WxApiClient.deleteMenu(weixinAccountService.get(weixinMenuGroup.getAccountId()));
+		if(rstObj != null && rstObj.getInt("errcode") == 0){//成功，更新菜单组
+			sb.append("微信公众账号删除菜单成功,");
+		}else{
+			sb.append("微信公众账号删除菜单失败,");
+		}
+		weixinMenuGroupService.delete(weixinMenuGroup);
+
+		addMessage(redirectAttributes,sb.append("删除菜单组成功").toString());
+		return "redirect:"+Global.getAdminPath()+"/weixin/weixinMenuGroup/?repage";
+	}
+
+	@RequiresPermissions("weixin:weixinMenuGroup:edit")
+	@RequestMapping(value = "publish")
+	public String publish(WeixinMenuGroup weixinMenuGroup, HttpServletRequest request, HttpServletResponse response, Model model) {
+ 		//发布菜单前先删除旧菜单
+		JSONObject rstObj = WxApiClient.deleteMenu(weixinAccountService.get(weixinMenuGroup.getAccountId()));
+		if(rstObj != null && rstObj.getInt("errcode") == 0){//成功，更新菜单组
+			logger.info("-------------------- 微信公众账号删除菜单成功 -------------------");
+		}else{
+			logger.info("-------------------- 微信公众账号删除菜单失败 -------------------");
+		}
+		String account = weixinAccountService.get(weixinMenuGroup.getAccountId()).getAccount();
+		return "redirect:/"+account+"/"+Global.getFrontPath()+"/weixin/"+weixinMenuGroup.getId()+"/publishMenu";
+	}
+
+}

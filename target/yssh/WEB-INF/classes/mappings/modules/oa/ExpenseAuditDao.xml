@@ -1,0 +1,168 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.thinkgem.jeesite.modules.oa.dao.ExpenseAuditDao">
+    
+
+
+	<sql id="expenseAuditJoins">
+		JOIN sys_user u ON u.id=a.user_id
+    </sql>
+
+	<select id="get" resultType="ExpenseAudit">
+		SELECT  a.*,u.name as userName
+		FROM oa_expense_audit a
+		<include refid="expenseAuditJoins"/>
+		WHERE a.id = #{id}
+	</select>
+
+	<insert id="insert">
+		INSERT INTO oa_expense_audit(
+		id,
+		user_id,
+		title,
+		yuanyin,
+		step_one,
+		step_two,
+		step_three,
+		create_by,
+		create_date,
+		update_by,
+		update_date,
+		remarks,
+		del_flag
+		) VALUES (
+		#{id},
+		#{userId},
+		#{title},
+		#{yuanyin},
+		#{stepOne},
+		#{stepTwo},
+		#{stepThree},
+		#{createBy.id},
+		#{createDate},
+		#{updateBy.id},
+		#{updateDate},
+		#{remarks},
+		#{delFlag}
+		)
+	</insert>
+
+	<update id="updateExpenseAudit">
+		UPDATE oa_expense_audit SET
+		<if test="title!=null and title!=''">
+			title = #{title},
+		</if>
+		<if test="yuanyin!=null and yuanyin!=''">
+			yuanyin = #{yuanyin},
+		</if>
+		<if test="stepOne!=null and stepOne!=''">
+			step_one = #{stepOne},
+		</if>
+		<if test="stepTwo!=null and stepTwo!=''">
+			step_two = #{stepTwo},
+		</if>
+		<if test="stepThree!=null and stepThree!=''">
+			step_three = #{stepThree},
+		</if>
+		update_by = #{updateBy.id},
+		update_date = #{updateDate}
+		WHERE id = #{id}
+	</update>
+
+	<select id="findList" resultType="ExpenseAudit">
+	    SELECT  a.*,u.id as userId
+		FROM oa_expense_audit a
+		<include refid="expenseAuditJoins"/>
+		WHERE a.del_flag = #{DEL_FLAG_NORMAL}
+		<if test="createBy != null and createBy.id != null and createBy.id != ''">
+			AND u.id LIKE
+			<if test="dbName == 'oracle'">'%'||#{createBy.id}||'%'</if>
+			<if test="dbName == 'mssql'">'%'+#{createBy.id}+'%'</if>
+			<if test="dbName == 'mysql'">CONCAT('%', #{createBy.id}, '%')</if>
+		</if>
+		ORDER BY a.update_date DESC
+	</select>
+
+	<!--
+    <select id="getByProcInsId" resultType="TestAudit">
+		SELECT 
+			<include refid="testAuditColumns"/>
+		FROM oa_test_audit a
+		<include refid="testAuditJoins"/>
+		WHERE a.proc_ins_id = #{procInsId}
+	</select>
+	
+
+	
+	<select id="findAllList" resultType="TestAudit">
+		SELECT 
+			<include refid="testAuditColumns"/>
+		FROM oa_test_audit a
+		<include refid="testAuditJoins"/>
+		WHERE a.del_flag = #{DEL_FLAG_NORMAL} 
+		ORDER BY a.update_date DESC
+	</select>
+	
+
+	
+	<update id="update">
+		UPDATE oa_test_audit SET 
+			user_id = #{user.id}, 
+			office_id = #{office.id}, 
+			post = #{post}, 
+			age = #{age}, 
+			edu = #{edu}, 
+			content = #{content}, 
+			olda = #{olda}, 
+			oldb = #{oldb}, 
+			oldc = #{oldc}, 
+			newa = #{newa}, 
+			newb = #{newb}, 
+			newc = #{newc}, 
+			add_num = #{addNum}, 
+			exe_date = #{exeDate},
+			update_by = #{updateBy.id}, 
+			update_date = #{updateDate}, 
+			remarks = #{remarks}
+		WHERE id = #{id}
+	</update>
+	
+	<update id="updateInsId">
+		UPDATE oa_test_audit SET 
+			proc_ins_id = #{procInsId},
+			update_by = #{updateBy.id}, 
+			update_date = #{updateDate}
+		WHERE id = #{id}
+	</update>
+	
+	<update id="updateHrText">
+		UPDATE oa_test_audit SET 
+			hr_text = #{hrText},
+			update_by = #{updateBy.id}, 
+			update_date = #{updateDate}
+		WHERE id = #{id}
+	</update>
+	
+	<update id="updateLeadText">
+		UPDATE oa_test_audit SET 
+			lead_text = #{leadText},
+			update_by = #{updateBy.id}, 
+			update_date = #{updateDate}
+		WHERE id = #{id}
+	</update>
+	
+	<update id="updateMainLeadText">
+		UPDATE oa_test_audit SET 
+			main_lead_text = #{mainLeadText},
+			update_by = #{updateBy.id}, 
+			update_date = #{updateDate}
+		WHERE id = #{id}
+	</update>
+	
+	<update id="delete">
+		UPDATE oa_test_audit SET 
+			del_flag = #{DEL_FLAG_DELETE}
+		WHERE id = #{id}
+	</update>
+	-->
+</mapper>
